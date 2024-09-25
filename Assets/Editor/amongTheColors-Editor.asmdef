@@ -1,0 +1,10 @@
+{
+  "name": "amongTheColors-Editor",
+  "references": [
+    "amongTheColors"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": []
+}
