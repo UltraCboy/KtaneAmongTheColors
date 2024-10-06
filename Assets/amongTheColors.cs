@@ -15,11 +15,14 @@ public class amongTheColors : MonoBehaviour {
 	private int moduleId;
 	private bool isSolved;
 	
+	private bool isPlaying = false;
+	
 	private int[] iColors = new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}; 
 	private string[] nColors = new string[] {"White", "Red", "Brown", "Orange", "Yellow", "Lime", "Black", "Green", "Cyan", "Blue", "Purple", "Pink"};
-	private string[] fakeColors = new string[] { "Maroon", "Violet", "Indigo", "Banana", "Blanana", "Gray", "Grey", "Magenta", "Tan", "Teal" };
+	private string[] fakeColors = new string[] { "Maroon", "Violet", "Indigo", "Banana", "Blananas", "Gray", "Grey", "Magenta", "Tan", "Teal" };
 	private int[][] Crew = new int[10][];
 	private int offset = 0;
+	private int offset2 = 0;
 	private int impostor = 99;
 	private int[] ghosts = new int[10];
 
@@ -29,19 +32,27 @@ public class amongTheColors : MonoBehaviour {
 
 	void Start () {
 		offset = bombInfo.GetBatteryCount(Battery.AA) - bombInfo.GetBatteryCount(Battery.D);
+		Debug.LogFormat("[Among the Colors #{0}] After batteries: {1}", moduleId, offset);
 		offset += (bombInfo.GetPortCount(Port.Parallel) * 2) + (bombInfo.GetPortCount(Port.PS2) * 2);
+		Debug.LogFormat("[Among the Colors #{0}] After Para PS2: {1}", moduleId, offset);
 		offset += (bombInfo.GetPortCount(Port.StereoRCA) * 4);
+		Debug.LogFormat("[Among the Colors #{0}] After RCA: {1}", moduleId, offset);
 		offset -= (bombInfo.GetPortCount(Port.Serial) * 2) + (bombInfo.GetPortCount(Port.RJ45) * 2);
+		Debug.LogFormat("[Among the Colors #{0}] After Serial RJ: {1}", moduleId, offset);
 		foreach ( string module in bombInfo.GetModuleNames() ) {
 			if ( module.Contains("Color") || module.Contains("Colour") ) offset += 5;
 		}
 		offset -= 5;
+		Debug.LogFormat("[Among the Colors #{0}] After Colors Mods: {1}", moduleId, offset);
+		offset2 = offset;
 		
 		foreach ( int[] c in Crew ) {
 			if (c[0] == (c[1]+6) % 12 || c[0] == (c[2]+6) % 12 || c[1] == (c[2]+6) % 12) {
 				offset += 3;
 			}
 		}
+		
+		Debug.LogFormat("[Among the Colors #{0}] After crew self colors: {1}", moduleId, offset);
 		
 		for ( int i = 1; i < 10; i++ ) {
 			for ( int j = 0; j < 3; j++ ) {
@@ -52,8 +63,10 @@ public class amongTheColors : MonoBehaviour {
 			}
 		}
 		
+		Debug.LogFormat("[Among the Colors #{0}] After crew other colors: {1}", moduleId, offset);
+		
 		int sColor = mod(offset + Crew[9][2], 12);
-		Debug.LogFormat("[Among The Colors #{0}] Offset is {1}, Sus color is {2}", moduleId , offset, nColors[sColor]);
+		Debug.LogFormat("[Among the Colors #{0}] Offset is {1}, Sus color is {2}", moduleId , offset, nColors[sColor]);
 		int [][] Suspects = new int[3][];
 		int x = 0;
 		foreach ( int[] c in Crew ) {
@@ -115,20 +128,36 @@ public class amongTheColors : MonoBehaviour {
 			string colorname;
 			if ( Crew[i][0] > 11 ) colorname = "Fake Name";
 			else colorname = nColors[Crew[i][0]];
-			Debug.LogFormat("[Among The Colors #{0}] Crewmate number {1} is {2}, {3}, {4}", moduleId, i+1, colorname, nColors[Crew[i][1]], nColors[Crew[i][2]]);
+			Debug.LogFormat("[Among the Colors #{0}] Crewmate number {1} is {2}, {3}, {4}", moduleId, i+1, colorname, nColors[Crew[i][1]], nColors[Crew[i][2]]);
 		} 
 		
 		if ( Suspects[1] != null ) {
 			foreach ( int[] s in Suspects ) {
-				Debug.LogFormat("[Among The Colors #{0}] Crewmate {1} is a suspect", moduleId, System.Array.IndexOf(Crew, s) + 1);
+				Debug.LogFormat("[Among the Colors #{0}] Crewmate {1} is a suspect", moduleId, System.Array.IndexOf(Crew, s) + 1);
+				
+				if (s[0] == (s[1]+6) % 12 || s[0] == (s[2]+6) % 12 || s[1] == (s[2]+6) % 12) {
+					offset2 += 3;
+				}
 			}
+			Debug.LogFormat("[Among the Colors #{0}] After crew self colors, offset 2: {1}", moduleId, offset2);
+		
+			for ( int i = 1; i < 3; i++ ) {
+				for ( int j = 0; j < 3; j++ ) {
+					if (Suspects[i][j] == (Suspects[i-1][j]+6) % 12) {
+						offset2 -= 3;
+						break;
+					}
+				}
+			}
+			Debug.LogFormat("[Among the Colors #{0}] After crew other colors, offset 2: {1}", moduleId, offset2);
 		}
 		
 		if (impostor == 99) {
-			offset = (int)Mathf.Round(offset/3.0f);
-			impostor = System.Array.IndexOf(Crew, Suspects[mod(offset, 3)]);
+			offset2 = (int)Mathf.Round(offset2/3.0f);
+			impostor = System.Array.IndexOf(Crew, Suspects[mod(offset2, 3)]);
+			Debug.LogFormat("[Among the Colors #{0}] Second offset is {1}", moduleId, offset2);
 		}
-		Debug.LogFormat("[Among The Colors #{0}] Crewmate {1} is the impostor.", moduleId, impostor+1);
+		Debug.LogFormat("[Among the Colors #{0}] Crewmate {1} is the impostor.", moduleId, impostor+1);
 	}
 
 	void Awake () {
@@ -168,21 +197,22 @@ public class amongTheColors : MonoBehaviour {
 	
 	void checkEject	() {
 		Eject.AddInteractionPunch();
-		if (ghosts[ScriptCrew.iCrew] == 1 || isSolved) return;
+		if (ghosts[ScriptCrew.iCrew] == 1 || isSolved || isPlaying) return;
+		isPlaying = true;
 		audio.PlaySoundAtTransform("Eject", transform);
 		ScriptCrew.crewAnimator.SetBool("ToEject", true);
 		string text;
 		bool toStrike = false;
 		if (ScriptCrew.iCrew != impostor) {
 			text = nColors[Crew[ScriptCrew.iCrew][0]] + " was not The Impostor";
-			Debug.LogFormat("[Among The Colors #{0}] Ejected Crewmate {1}, which is wrong.", moduleId, ScriptCrew.iCrew + 1);
+			Debug.LogFormat("[Among the Colors #{0}] Ejected Crewmate {1}, which is wrong.", moduleId, ScriptCrew.iCrew + 1);
 			toStrike = true;
 		} else {
 			string name;
 			if (Crew[impostor][0] > 11) name = fakeColors[Crew[impostor][0] % 12];
 			else name = nColors[Crew[impostor][0]];
 			text = name + " was The Impostor";
-			Debug.LogFormat("[Among The Colors #{0}] You ejected the impostor.", moduleId);
+			Debug.LogFormat("[Among the Colors #{0}] You ejected the impostor.", moduleId);
 			audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.CorrectChime, transform);
 			isSolved = true;
 			module.HandlePass();
@@ -204,6 +234,7 @@ public class amongTheColors : MonoBehaviour {
 			CheckText.text = "";
 			ScriptCrew.crewAnimator.SetBool("ToEject", false);
 		}
+		isPlaying = false;
 	}
 		
 	void setFocus ( bool focus ) {

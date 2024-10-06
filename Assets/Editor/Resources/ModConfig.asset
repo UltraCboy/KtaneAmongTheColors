@@ -16,6 +16,6 @@ MonoBehaviour:
   author: Dragoon
   description: "\u201CIt\u2019s Red! I literally saw him vent!\u201D \u201C...which
     Red?\u201D\n\nAmogus\n\nIdea and manual by: UltraCboy\nModule ID: amongTheColors"
-  version: 1.0
+  version: 1.025
   outputFolder: build
   previewImage: {fileID: 2800000, guid: fe05329c2ea781140b6967860a315d8c, type: 3}
