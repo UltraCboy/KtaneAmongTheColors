@@ -254,4 +254,44 @@ public class amongTheColors : MonoBehaviour {
 	}
 	
 	int mod(int a, int b) {  return ((a %= b) < 0) ? a+b : a;  }
+
+	//twitch plays
+	#pragma warning disable 414
+	private readonly string TwitchHelpMessage = @"!{0} eject 3 [Ejects the 3rd crewmate in the sequence]";
+	#pragma warning restore 414
+	IEnumerator ProcessTwitchCommand(string command)
+	{
+		string[] parameters = command.Split(' ');
+		if (parameters[0].EqualsIgnoreCase("eject"))
+        {
+			if (parameters.Length > 2)
+				yield return "sendtochaterror Too many parameters!";
+			else if (parameters.Length == 2)
+            {
+				int num;
+				if (!int.TryParse(parameters[1], out num))
+                {
+					yield return "sendtochaterror!f The specified crewmate '" + parameters[1] + "' is invalid!";
+					yield break;
+                }
+				if (num < 1 || num > 10)
+                {
+					yield return "sendtochaterror The specified crewmate '" + parameters[1] + "' is invalid!";
+					yield break;
+				}
+				yield return null;
+				while (ScriptCrew.iCrew != num - 1) yield return "trycancel";
+				if (ScriptCrew.iCrew != impostor) yield return "strike";
+				Eject.OnInteract();
+            }
+			else
+				yield return "sendtochaterror Please specify a crewmate to eject!";
+		}
+	}
+
+	IEnumerator TwitchHandleForcedSolve()
+    {
+		while (isPlaying || ScriptCrew.iCrew != impostor) yield return true;
+		Eject.OnInteract();
+	}
 }
